@@ -1,0 +1,24 @@
+/* Selector de clase*/
+.button{
+    -fx-background-color: #123abc;
+    -fx-text-fill: white;
+    -fx-border-color: black;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    /*-fx-padding: 60,60,60,60,60;*/
+
+}
+
+
+/* Selector de identificador*/
+#fontButton{
+    -fx-font: bold italic 20pt "Arial";
+    -fx-background-color: #ef4646;
+    -fx-text-fill: white;
+}
+
+.button:hover
+{
+    -fx-background-color: #aaaaaa;
+}
+

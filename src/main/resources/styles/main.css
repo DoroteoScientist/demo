@@ -1,0 +1,5 @@
+/*se referencia a la escena*/
+.root
+{
+    -fx-background-image: url("../image/lince.jpg");
+}
