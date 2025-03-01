@@ -48,7 +48,8 @@ public class Calculadora extends Stage
                     btnTeclado[i][j].setId("fontButton");
                     //esto es una asignacion a un [unico elemento de la itnerfaz
                     //btnTeclado[i][j].setStyle("-fx-background-color: rgbs(60,60,60,60,60)");
-                }btnTeclado[i][j].setOnAction(actionEvent -> EventoTeclado(teclas[finalPos]));
+                }
+                btnTeclado[i][j].setOnAction(actionEvent -> EventoTeclado(teclas[finalPos]));
                 btnTeclado[i][j].setPrefSize(50,50);
                 gdspTeclado.add(btnTeclado[i][j],j,i);
                 pos++;
@@ -59,16 +60,24 @@ public class Calculadora extends Stage
 
     private void  EventoTeclado(String tecla) {
         txtDisplay.appendText(tecla);
+
+
         if (tecla == "=")
         {
             operacion = txtDisplay.getText();
             realizarOperacion(operacion);
+            //switch ()
         }
     }
 
+    
+
     private void realizarOperacion(String operaciones)
     {
+        String simbolo = operaciones.replaceAll("[0-9]","");
+        for (int i = 0; i < simbolo.length(); i++) {
 
+        }
     }
 
     public Calculadora()

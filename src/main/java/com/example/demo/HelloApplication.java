@@ -2,6 +2,8 @@ package com.example.demo;
 
 import Modelos.Conexion;
 import Vistas.Calculadora;
+import Vistas.ListaClientes;
+import Vistas.Rompecabezas;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
@@ -12,6 +14,7 @@ import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import jdk.dynalink.linker.LinkerServices;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -21,7 +24,7 @@ public class HelloApplication extends Application {
     private VBox vbox;
     private MenuBar mnp;
     private Menu competencia1, competencia2;
-    private MenuItem caluladora;
+    private MenuItem caluladora,restaurante, puzzle;
     private Scene escena;
     private VBox vBox;
 
@@ -29,8 +32,15 @@ public class HelloApplication extends Application {
     {
             caluladora = new MenuItem("Calculadora");
             caluladora.setOnAction(actionEvent -> new Calculadora());
+
+            restaurante = new MenuItem("Clientes");
+            restaurante.setOnAction(actionEvent -> new ListaClientes());
+
+            puzzle = new MenuItem("Rompecabezas");
+            puzzle.setOnAction(actionEvent -> new Rompecabezas());
+
             competencia1 = new Menu("Compentencia 1");
-            competencia1.getItems().addAll(caluladora);
+            competencia1.getItems().addAll(caluladora,restaurante,puzzle);
             mnp = new MenuBar();
             mnp.getMenus().addAll(competencia1);
 

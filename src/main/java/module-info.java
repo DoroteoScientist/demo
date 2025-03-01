@@ -1,11 +1,14 @@
 module com.example.demo {
     requires javafx.controls;
     requires javafx.fxml;
-
-
-    opens com.example.demo to javafx.fxml;
     requires org.kordamp.bootstrapfx.core;
-    exports com.example.demo;
     requires mysql.connector.j;
     requires java.sql;
+    requires jdk.dynalink;
+    requires java.desktop;
+
+    exports com.example.demo;
+    exports Modelos;
+    opens com.example.demo to javafx.fxml;
+    opens Modelos to javafx.fxml;
 }
