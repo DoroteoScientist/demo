@@ -73,7 +73,7 @@ public class ClientesDAO {
     {
         //MANDAR CONSULTA A LA BD
         String query = "UPDATE cliente SET nomCte = '"+nomCte+"', telefonoCte = '"+telefonoiCte+
-                "',direccion = '"+direccion+"'," + "',emailCte = '"+emailCte+"' WHERE idCte = "+idCte;
+                "',direccion = '"+direccion+"',emailCte = '"+emailCte+"' WHERE idCte = '"+idCte+"'";
         //asi sin nada, se actualizarian todos los registros con un solo dato, asi
         //que hay que ponerle el WHERE
         try{

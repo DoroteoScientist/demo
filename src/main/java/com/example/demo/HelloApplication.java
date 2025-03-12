@@ -4,6 +4,7 @@ import Modelos.Conexion;
 import Vistas.Calculadora;
 import Vistas.ListaClientes;
 import Vistas.Rompecabezas;
+import com.example.demo.Componentes.Hilo;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
@@ -54,8 +55,17 @@ public class HelloApplication extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
+
+        new Hilo("ruta Pinos").start();
+        new Hilo("ruta Laureles").start();
+        new Hilo("ruta San Juan De La Vega").start();
+        new Hilo("ruta Monte Blanco").start();
+        new Hilo("ruta Teneria").start();
+
+
         Conexion.CrearConexion();//manda  a lamar
         crearUI();
+
         //vbox = new VBox();
         stage.setTitle("Hola Mundo de Eventos :D");
         stage.setScene(escena);
