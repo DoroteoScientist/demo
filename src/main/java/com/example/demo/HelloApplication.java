@@ -2,6 +2,7 @@ package com.example.demo;
 
 import Modelos.Conexion;
 import Vistas.Calculadora;
+import Vistas.Celayork;
 import Vistas.ListaClientes;
 import Vistas.Rompecabezas;
 import com.example.demo.Componentes.Hilo;
@@ -25,7 +26,7 @@ public class HelloApplication extends Application {
     private VBox vbox;
     private MenuBar mnp;
     private Menu competencia1, competencia2;
-    private MenuItem caluladora,restaurante, puzzle;
+    private MenuItem caluladora,restaurante, puzzle,mitHilos;
     private Scene escena;
     private VBox vBox;
 
@@ -40,10 +41,19 @@ public class HelloApplication extends Application {
             puzzle = new MenuItem("Rompecabezas");
             puzzle.setOnAction(actionEvent -> new Rompecabezas());
 
+            mitHilos = new MenuItem("Carreras (Hilos)");
+            mitHilos.setOnAction(actionEvent -> new Celayork());
+
             competencia1 = new Menu("Compentencia 1");
             competencia1.getItems().addAll(caluladora,restaurante,puzzle);
+
+            competencia2 = new Menu("Compentencia 2");
+            competencia2.getItems().addAll(mitHilos);
+
             mnp = new MenuBar();
-            mnp.getMenus().addAll(competencia1);
+            mnp.getMenus().addAll(competencia1,competencia2);
+
+
 
             //Agregar verticalBox al menubar principal
             vBox = new VBox(mnp);
@@ -56,6 +66,7 @@ public class HelloApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
 
+/*
         new Hilo("ruta Pinos").start();
         new Hilo("ruta Laureles").start();
         new Hilo("ruta San Juan De La Vega").start();
@@ -63,6 +74,7 @@ public class HelloApplication extends Application {
         new Hilo("ruta Teneria").start();
 
 
+ */
         Conexion.CrearConexion();//manda  a lamar
         crearUI();
 

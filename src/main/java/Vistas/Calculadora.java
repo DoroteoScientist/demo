@@ -60,8 +60,6 @@ public class Calculadora extends Stage
 
     private void  EventoTeclado(String tecla) {
         txtDisplay.appendText(tecla);
-
-
         if (tecla == "=")
         {
             operacion = txtDisplay.getText();
@@ -75,6 +73,7 @@ public class Calculadora extends Stage
     private void realizarOperacion(String operaciones)
     {
         String simbolo = operaciones.replaceAll("[0-9]","");
+        String[] operandos = operaciones.split(simbolo);
         for (int i = 0; i < simbolo.length(); i++) {
 
         }
