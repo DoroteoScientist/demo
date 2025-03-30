@@ -16,7 +16,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
 
 public class Rompecabezas extends Stage {
 
@@ -84,11 +86,11 @@ public class Rompecabezas extends Stage {
 
     public void tablero(String opcion) {
         Label[][] imagenesOriginal;
-        Image imagen;
         ImageView imageView;
+        GridPane pzaOriginal;
         switch (opcion) {
             case "Piezas chicas":
-                //piezas = new GridPane();
+                pzaOriginal = new GridPane();
                 imagenes = new Label[4][4];
                 imagenesOriginal = new Label[4][4];
 
@@ -118,15 +120,27 @@ public class Rompecabezas extends Stage {
                                 + (j+1) + ".jpg").toString());
                         imagenesOriginal[i][j] = new Label();
                         imagenesOriginal[i][j].setGraphic(imageView);
-                        //piezas.add(imagenes[i][j], j, i);
+                        pzaOriginal.add(imagenesOriginal[i][j], j, i);
                     }
                 }
 
-                do {
-                    reacomodar(imagenes);
-                }while (imagenes != imagenesOriginal);
-                tiempoFinal = System.currentTimeMillis()-tiempoInicion;
-                registrarTiempos(tiempoFinal);
+
+                reacomodar(imagenes);
+
+
+                if (verificarRompecabezasCompleto()) {
+                    tiempoFinal = System.currentTimeMillis() - tiempoInicion;
+                    mostrarAlertaCompletado(tiempoFinal);
+                    registrarTiempos(tiempoFinal);
+                }
+
+                //boolean realizado = compararGridPane(piezas,pzaOriginal);
+                //boolean realizado = compararArreglos(imagenes,imagenesOriginal);
+                //if(realizado) {
+                  //  new Alert(Alert.AlertType.CONFIRMATION);
+                    //System.out.println("AAAAAAA");
+                //}   //tiempoFinal = System.currentTimeMillis()-tiempoInicion;
+                //registrarTiempos(tiempoFinal);
                 break;
             case "Piezas grandes":
                 break;
@@ -136,15 +150,75 @@ public class Rompecabezas extends Stage {
     }
 
 
-    private void registrarTiempos(long tiempo)
-    {
-        try{
-            regTiempos = new RandomAccessFile("\\..\\resources\\docuemnts\\tiempoos","rw");
+    public  boolean compararArreglos(Label[][] a1, Label[][] a2) {
+        //if (a1.length != a2.length) return false;
+        for (int i = 0; i < a1.length; i++) {
+            for (int j = 0; j < a1[0].length; j++) {
+                 return compararImagenes((ImageView) a1[i][j].getGraphic(),(ImageView) a2[i][j].getGraphic());
+            }
+        }
+        return true;
+    }
+
+    public boolean compararImagenes(ImageView ax, ImageView bx) {
+        if (ax == null || bx == null) return false;
+        if (ax.getImage() == null || bx.getImage() == null) return false;
+
+        // Comparar por la URL de la imagen cargada
+        String urlA = ax.getImage().getUrl();
+        String urlB = bx.getImage().getUrl();
+
+        return Objects.equals(urlA, urlB);
+    }
+
+    private boolean compararGridPane(GridPane a, GridPane b) {
+        for (int i = 0; i < a.getRowCount(); i++) {
+            for (int j = 0; j < a.getColumnCount(); j++) {
+                Label auxA = (Label) obtenerNodoGridPane(a, j, i);
+                Label auxB = (Label) obtenerNodoGridPane(b, j, i);
+
+                if (auxA == null || auxB == null) return false;
+
+                ImageView imgA = (ImageView) auxA.getGraphic();
+                ImageView imgB = (ImageView) auxB.getGraphic();
+
+                if (!compararImagenes(imgA, imgB)) return false;
+            }
+        }
+        return true;
+    }
+
+    private Node obtenerNodoGridPane(GridPane gridPane, int col, int row) {
+        for (Node node : gridPane.getChildren()) {
+            if (GridPane.getColumnIndex(node) == col && GridPane.getRowIndex(node) == row) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+
+    private void registrarTiempos(long tiempo) {
+        try {
+            File dirResources = new File("resources/documents");
+            if (!dirResources.exists()) {
+                dirResources.mkdirs();
+            }
+
+            regTiempos = new RandomAccessFile("resources/documents/tiempos", "rw");
+            regTiempos.seek(regTiempos.length()); // Ir al final del archivo
             regTiempos.writeLong(tiempo);
+            regTiempos.close();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Error al guardar tiempo");
+            alert.setContentText("No se pudo guardar el tiempo en el archivo.");
+            alert.showAndWait();
         }
     }
+
 
     private void imprimirMatriz(Label[][] click) {
         System.out.println("Estado actual de la matriz:");
@@ -213,9 +287,52 @@ public class Rompecabezas extends Stage {
                 piezas.add(newDestinoLabel, oldJ, oldI);
 
                 imprimirMatriz(click);
+
             }
         });
     }
+
+    private void mostrarAlertaCompletado(long tiempo) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("¡Felicidades!");
+        alert.setHeaderText("¡Rompecabezas completado!");
+        alert.setContentText("Has completado el rompecabezas en " + (tiempo / 1000) + " segundos.");
+        alert.showAndWait();
+    }
+
+
+    private boolean verificarRompecabezasCompleto() {
+        // Recorrer todas las piezas y verificar si están en la posición correcta
+        for (Node node : piezas.getChildren()) {
+            if (node instanceof Label) {
+                Label label = (Label) node;
+
+                // Obtener la posición actual en el grid
+                Integer currentRow = GridPane.getRowIndex(label);
+                Integer currentCol = GridPane.getColumnIndex(label);
+                if (currentRow == null) currentRow = 0;
+                if (currentCol == null) currentCol = 0;
+
+                // Obtener la posición correcta almacenada en userData
+                String[] correctPosition = ((String) label.getUserData()).split(",");
+                int correctRow = Integer.parseInt(correctPosition[0]);
+                int correctCol = Integer.parseInt(correctPosition[1]);
+
+                // Si la posición actual no coincide con la correcta, el puzzle no está completo
+                if (currentRow != correctRow || currentCol != correctCol) {
+                    return false;
+                }
+            }
+        }
+
+        // Si todas las piezas están en posición correcta
+        return true;
+    }
+
+
+
+
+
     public String[][] generarCuadroCoordenadas(int fila, int columna, String[][] cuadrito) {
         for (int i = 0; i < fila; i++) {
             ArrayList<String> coordenadas = new ArrayList<>();
