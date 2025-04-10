@@ -1,8 +1,14 @@
 package Vistas;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
@@ -10,15 +16,10 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Objects;
+import java.io.*;
+import java.util.*;
 
 public class Rompecabezas extends Stage {
 
@@ -26,16 +27,18 @@ public class Rompecabezas extends Stage {
 
     private ToolBar menu;
     private VBox vBox;
-    private Button btnEmpezar, btnOpcion;
-    private GridPane tablerito;
+    private Button btnEmpezar;
     private MenuBar practica3;
     private MenuItem chico, medio, grande;
     private Label[][] imagenes;
     private Menu opciones;
     private TextField opcionInicio;
     private GridPane piezas;
+    private GridPane piezasOriginales; // GridPane para mantener el orden correcto
     private long tiempoInicion,tiempoFinal;
-    private RandomAccessFile regTiempos;
+    private TableView<String> intento;
+    private Label tiempo;
+    private  Timeline cuentador;
 
     public Rompecabezas() {
         CrearUI();
@@ -47,14 +50,15 @@ public class Rompecabezas extends Stage {
     public void CrearUI() {
 
         piezas = new GridPane();
+        piezasOriginales = new GridPane(); // Inicializa el GridPane de piezas originales
 
         chico = new MenuItem("Piezas chicas");
         chico.setOnAction(actionEvent ->
-            opcionInicio.setText("Piezas chicas"));
+                opcionInicio.setText("Piezas chicas"));
 
         medio = new MenuItem("Piezas medianas");
         medio.setOnAction(actionEvent ->
-        opcionInicio.setText("Piezas medianas"));
+                opcionInicio.setText("Piezas medianas"));
 
         grande = new MenuItem("Piezas grandes");
         grande.setOnAction(actionEvent -> opcionInicio.setText("Piezas grandes"));
@@ -72,234 +76,239 @@ public class Rompecabezas extends Stage {
         opciones.getItems().addAll(chico, medio, grande);
         practica3 = new MenuBar();
         practica3.getMenus().addAll(opciones);
-        menu = new ToolBar(btnEmpezar, practica3, opcionInicio);
+        tiempo = new Label("0");
+        menu = new ToolBar(btnEmpezar, practica3, opcionInicio,tiempo);
         vBox = new VBox(menu, piezas);
-        escena = new Scene(vBox, 600, 200);
-    }
-
-    public void ventanaTiempo(long tiempoUno, long tiempoDos)
-    {
-        Stage ventana;
-        Scene escena;
-
+        escena = new Scene(vBox, 600, 600); // Aumentamos el tamaño para que quepa el puzzle
     }
 
     public void tablero(String opcion) {
-        Label[][] imagenesOriginal;
-        ImageView imageView;
-        GridPane pzaOriginal;
+        piezas.getChildren().clear();
+        piezasOriginales.getChildren().clear();
+        String[][] coordenadasMezcladas;
+
         switch (opcion) {
             case "Piezas chicas":
-                pzaOriginal = new GridPane();
+
+                contador();
                 imagenes = new Label[4][4];
-                imagenesOriginal = new Label[4][4];
 
-                String numeros[][] = new String[4][4];
-                //int numeros2[][] = new int[4][4];
-                int amama;
-
-                numeros = generarCuadroCoordenadas(4,4,numeros);
-                //numeros2 = generarCuadroNoRepetido(4,4,numeros2);
+                coordenadasMezcladas = new String[4][4];
+                coordenadasMezcladas = generarCuadroCoordenadas(4, 4, coordenadasMezcladas);
 
                 for (int i = 0; i < 4; i++) {
                     for (int j = 0; j < 4; j++) {
-                        //imageView = new ImageView(getClass().getResource("/image/puzzle1/row-" + (i + (int) (Math.random() * 3f)) + "-column-" + (j + (int) (Math.random() * 3f)) + ".jpg").toString());
-                        imageView = new ImageView(getClass().getResource("/image/puzzle1/row-"
-                                + (Integer.parseInt(numeros[i][j].substring(0,1))+1) + "-column-"
-                                + (Integer.parseInt(numeros[i][j].substring(2))+1) + ".jpg").toString());
-                        imagenes[i][j] = new Label();
-                        imagenes[i][j].setGraphic(imageView);
-                        piezas.add(imagenes[i][j], j, i);
+                        String[] coords = coordenadasMezcladas[i][j].split(",");
+                        int rowCoord = Integer.parseInt(coords[0]);
+                        int colCoord = Integer.parseInt(coords[1]);
+
+                        String imagePath = "/image/puzzle1/row-" + (rowCoord + 1) + "-column-" + (colCoord + 1) + ".jpg";
+                        ImageView imageView = new ImageView(getClass().getResource(imagePath).toString());
+                        imageView.setFitWidth(100);
+                        imageView.setFitHeight(100);
+
+
+                        Label label = new Label();
+                        label.setGraphic(imageView);
+                        label.setStyle("-fx-border-color: gray; -fx-border-width: 1px; -fx-padding: 1px;");
+                        // Almacenar la posición correcta como metadatos
+                        label.setUserData(rowCoord + "," + colCoord);
+
+                        // Configurar el drag and drop para cada pieza
+                        configurarDragAndDrop(label);
+
+                        imagenes[i][j] = label;
+                        piezas.add(label, j, i);
                     }
                 }
 
-                for (int i = 0; i < imagenes.length; i++) {
-                    for (int j = 0; j < imagenes[0].length; j++) {
-                        imageView = new ImageView(getClass().getResource("/image/puzzle1/row-"
-                                + (i+1) + "-column-"
-                                + (j+1) + ".jpg").toString());
-                        imagenesOriginal[i][j] = new Label();
-                        imagenesOriginal[i][j].setGraphic(imageView);
-                        pzaOriginal.add(imagenesOriginal[i][j], j, i);
+                break;
+
+            case "Piezas medianas":
+
+                contador();
+                imagenes = new Label[5][5];
+
+                coordenadasMezcladas = new String[5][5];
+                coordenadasMezcladas = generarCuadroCoordenadas(5, 5, coordenadasMezcladas);
+
+                for (int i = 0; i < 5; i++) {
+                    for (int j = 0; j < 5; j++) {
+                        String[] coords = coordenadasMezcladas[i][j].split(",");
+                        int rowCoord = Integer.parseInt(coords[0]);
+                        int colCoord = Integer.parseInt(coords[1]);
+
+                        String imagePath = "/image/puzzle2/row-" + (rowCoord + 1) + "-column-" + (colCoord + 1) + ".png";
+                        ImageView imageView = new ImageView(getClass().getResource(imagePath).toString());
+                        imageView.setFitWidth(100);
+                        imageView.setFitHeight(100);
+
+                        Label label = new Label();
+                        label.setGraphic(imageView);
+                        label.setStyle("-fx-border-color: purple; -fx-border-width: 1px; -fx-padding: 1px;");
+                        // Almacenar la posición correcta como metadatos
+                        label.setUserData(rowCoord + "," + colCoord);
+
+                        // Configurar el drag and drop para cada pieza
+                        configurarDragAndDrop(label);
+
+                        imagenes[i][j] = label;
+                        piezas.add(label, j, i);
                     }
                 }
 
+                break;
 
-                reacomodar(imagenes);
+            case "Piezas grandes":
 
+                contador();
+                imagenes = new Label[6][6];
 
+                coordenadasMezcladas = new String[6][6];
+                coordenadasMezcladas = generarCuadroCoordenadas(6, 6, coordenadasMezcladas);
+
+                for (int i = 0; i < 6; i++) {
+                    for (int j = 0; j < 6; j++) {
+                        String[] coords = coordenadasMezcladas[i][j].split(",");
+                        int rowCoord = Integer.parseInt(coords[0]);
+                        int colCoord = Integer.parseInt(coords[1]);
+
+                        String imagePath = "/image/puzzle3/row-" + (rowCoord + 1) + "-column-" + (colCoord + 1) + ".png";
+                        ImageView imageView = new ImageView(getClass().getResource(imagePath).toString());
+                        imageView.setFitWidth(100);
+                        imageView.setFitHeight(100);
+
+                        Label label = new Label();
+                        label.setGraphic(imageView);
+                        label.setStyle("-fx-border-color: red; -fx-border-width: 3px; -fx-padding: 1px;");
+                        // Almacenar la posición correcta como metadatos
+                        label.setUserData(rowCoord + "," + colCoord);
+
+                        // Configurar el drag and drop para cada pieza
+                        configurarDragAndDrop(label);
+
+                        imagenes[i][j] = label;
+                        piezas.add(label, j, i);
+                    }
+                }
+
+                break;
+
+            default:
+                Alert alerta = new Alert(Alert.AlertType.WARNING);
+                alerta.setTitle("Selección requerida");
+                alerta.setHeaderText("Selecciona un tamaño de piezas");
+                alerta.setContentText("Por favor, selecciona un tamaño de piezas antes de empezar.");
+                alerta.showAndWait();
+                break;
+        }
+    }
+
+    private void configurarDragAndDrop(Label pieceLabel) {
+        // Configurar el origen del drag (pieza que se arrastra)
+        pieceLabel.setOnDragDetected(event -> {
+            Dragboard db = pieceLabel.startDragAndDrop(TransferMode.MOVE);
+            ClipboardContent content = new ClipboardContent();
+
+            // Guardamos información sobre la pieza que estamos arrastrando
+            // Usamos el índice de la pieza en el GridPane
+            Integer rowIndex = GridPane.getRowIndex(pieceLabel);
+            Integer colIndex = GridPane.getColumnIndex(pieceLabel);
+            if (rowIndex == null) rowIndex = 0;
+            if (colIndex == null) colIndex = 0;
+
+            content.putString(rowIndex + "," + colIndex);
+            db.setContent(content);
+
+            event.consume();
+        });
+
+        // Configurar el destino del drag (donde se suelta la pieza)
+        pieceLabel.setOnDragOver(event -> {
+            // Permitir la operación de drop
+            if (event.getGestureSource() != pieceLabel &&
+                    event.getDragboard().hasString()) {
+                event.acceptTransferModes(TransferMode.MOVE);
+            }
+            event.consume();
+        });
+
+        // Manejar el evento de drop
+        pieceLabel.setOnDragDropped(event -> {
+            Dragboard db = event.getDragboard();
+            boolean success = false;
+
+            if (db.hasString()) {
+                // Obtenemos las coordenadas de origen
+                String[] sourceIndices = db.getString().split(",");
+                int sourceRow = Integer.parseInt(sourceIndices[0]);
+                int sourceCol = Integer.parseInt(sourceIndices[1]);
+
+                // Obtenemos las coordenadas de destino
+                Integer targetRow = GridPane.getRowIndex(pieceLabel);
+                Integer targetCol = GridPane.getColumnIndex(pieceLabel);
+                if (targetRow == null) targetRow = 0;
+                if (targetCol == null) targetCol = 0;
+
+                // Intercambiar las piezas
+                intercambiarPiezas(sourceRow, sourceCol, targetRow, targetCol);
+
+                success = true;
+
+                // Verificar si el rompecabezas está completo
                 if (verificarRompecabezasCompleto()) {
                     tiempoFinal = System.currentTimeMillis() - tiempoInicion;
                     mostrarAlertaCompletado(tiempoFinal);
                     registrarTiempos(tiempoFinal);
                 }
-
-                //boolean realizado = compararGridPane(piezas,pzaOriginal);
-                //boolean realizado = compararArreglos(imagenes,imagenesOriginal);
-                //if(realizado) {
-                  //  new Alert(Alert.AlertType.CONFIRMATION);
-                    //System.out.println("AAAAAAA");
-                //}   //tiempoFinal = System.currentTimeMillis()-tiempoInicion;
-                //registrarTiempos(tiempoFinal);
-                break;
-            case "Piezas grandes":
-                break;
-            case "Piezas medianas":
-                break;
-        }
-    }
-
-
-    public  boolean compararArreglos(Label[][] a1, Label[][] a2) {
-        //if (a1.length != a2.length) return false;
-        for (int i = 0; i < a1.length; i++) {
-            for (int j = 0; j < a1[0].length; j++) {
-                 return compararImagenes((ImageView) a1[i][j].getGraphic(),(ImageView) a2[i][j].getGraphic());
             }
+
+            event.setDropCompleted(success);
+            event.consume();
+        });
+    }
+
+    private void intercambiarPiezas(int sourceRow, int sourceCol, int targetRow, int targetCol) {
+        // Obtenemos referencias a las etiquetas
+        Label sourceLabel = obtenerLabelEnPosicion(piezas, sourceRow, sourceCol);
+        Label targetLabel = obtenerLabelEnPosicion(piezas, targetRow, targetCol);
+
+        if (sourceLabel != null && targetLabel != null) {
+            // Guardamos los gráficos (imágenes)
+            ImageView sourceImage = (ImageView) sourceLabel.getGraphic();
+            ImageView targetImage = (ImageView) targetLabel.getGraphic();
+
+            // Guardamos los metadatos
+            Object sourceData = sourceLabel.getUserData();
+            Object targetData = targetLabel.getUserData();
+
+            // Intercambiamos las imágenes y los metadatos
+            sourceLabel.setGraphic(targetImage);
+            targetLabel.setGraphic(sourceImage);
+
+            sourceLabel.setUserData(targetData);
+            targetLabel.setUserData(sourceData);
+
+            // Actualizamos la matriz imagenes si la estamos utilizando
+            imagenes[sourceRow][sourceCol] = sourceLabel;
+            imagenes[targetRow][targetCol] = targetLabel;
         }
-        return true;
-    }
+       }
 
-    public boolean compararImagenes(ImageView ax, ImageView bx) {
-        if (ax == null || bx == null) return false;
-        if (ax.getImage() == null || bx.getImage() == null) return false;
+    private Label obtenerLabelEnPosicion(GridPane grid, int row, int col) {
+        for (Node node : grid.getChildren()) {
+            Integer nodeRow = GridPane.getRowIndex(node);
+            Integer nodeCol = GridPane.getColumnIndex(node);
 
-        // Comparar por la URL de la imagen cargada
-        String urlA = ax.getImage().getUrl();
-        String urlB = bx.getImage().getUrl();
+            if (nodeRow == null) nodeRow = 0;
+            if (nodeCol == null) nodeCol = 0;
 
-        return Objects.equals(urlA, urlB);
-    }
-
-    private boolean compararGridPane(GridPane a, GridPane b) {
-        for (int i = 0; i < a.getRowCount(); i++) {
-            for (int j = 0; j < a.getColumnCount(); j++) {
-                Label auxA = (Label) obtenerNodoGridPane(a, j, i);
-                Label auxB = (Label) obtenerNodoGridPane(b, j, i);
-
-                if (auxA == null || auxB == null) return false;
-
-                ImageView imgA = (ImageView) auxA.getGraphic();
-                ImageView imgB = (ImageView) auxB.getGraphic();
-
-                if (!compararImagenes(imgA, imgB)) return false;
-            }
-        }
-        return true;
-    }
-
-    private Node obtenerNodoGridPane(GridPane gridPane, int col, int row) {
-        for (Node node : gridPane.getChildren()) {
-            if (GridPane.getColumnIndex(node) == col && GridPane.getRowIndex(node) == row) {
-                return node;
+            if (nodeRow == row && nodeCol == col && node instanceof Label) {
+                return (Label) node;
             }
         }
         return null;
     }
-
-
-    private void registrarTiempos(long tiempo) {
-        try {
-            File dirResources = new File("resources/documents");
-            if (!dirResources.exists()) {
-                dirResources.mkdirs();
-            }
-
-            regTiempos = new RandomAccessFile("resources/documents/tiempos", "rw");
-            regTiempos.seek(regTiempos.length()); // Ir al final del archivo
-            regTiempos.writeLong(tiempo);
-            regTiempos.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("Error al guardar tiempo");
-            alert.setContentText("No se pudo guardar el tiempo en el archivo.");
-            alert.showAndWait();
-        }
-    }
-
-
-    private void imprimirMatriz(Label[][] click) {
-        System.out.println("Estado actual de la matriz:");
-        for (int i = 0; i < click.length; i++) {
-            for (int j = 0; j < click[i].length; j++) {
-                // Muestra la referencia del objeto en memoria si el Label existe
-                System.out.print("[ " + (click[i][j] != null ? click[i][j].hashCode() : "null") + " ] ");
-            }
-            System.out.println();
-        }
-        System.out.println("---------------------");
-    }
-
-    public void agregarEventosDeMovimiento(Label label, Label[][] click, int originalI, int originalJ) {
-        label.setOnMousePressed(event -> {
-            // Guardamos la posición inicial
-            label.setUserData(originalI + "," + originalJ);
-        });
-
-        label.setOnMouseReleased(event -> {
-            // Obtenemos la posición de origen
-            String[] indices = ((String) label.getUserData()).split(",");
-            int oldI = Integer.parseInt(indices[0]);
-            int oldJ = Integer.parseInt(indices[1]);
-
-            // Obtenemos la nueva posición usando el MouseEvent
-            Node targetNode = event.getPickResult().getIntersectedNode();
-
-            if (targetNode instanceof Label) {
-                Integer newI = GridPane.getRowIndex(targetNode);
-                Integer newJ = GridPane.getColumnIndex(targetNode);
-
-                if (newI == null) newI = 0;
-                if (newJ == null) newJ = 0;
-
-                // Verificamos que no estemos intentando mover a la misma posición
-                if (oldI == newI && oldJ == newJ) {
-                    return;
-                }
-
-                // Intercambiar Labels en la matriz
-                Label draggedLabel = click[oldI][oldJ];
-                Label destino = click[newI][newJ];
-
-                // Removemos los Labels antiguos
-                piezas.getChildren().remove(draggedLabel);
-                piezas.getChildren().remove(destino);
-
-                // Creamos nuevos Labels para evitar referencias duplicadas
-                Label newDraggedLabel = new Label();
-                newDraggedLabel.setGraphic(draggedLabel.getGraphic());
-
-                Label newDestinoLabel = new Label();
-                newDestinoLabel.setGraphic(destino.getGraphic());
-
-                // Actualizamos la matriz con las nuevas referencias
-                click[oldI][oldJ] = newDestinoLabel;
-                click[newI][newJ] = newDraggedLabel;
-
-                // Agregamos eventos a los nuevos Labels
-                agregarEventosDeMovimiento(newDraggedLabel, click, newI, newJ);
-                agregarEventosDeMovimiento(newDestinoLabel, click, oldI, oldJ);
-
-                // Agregamos los nuevos Labels al GridPane
-                piezas.add(newDraggedLabel, newJ, newI);
-                piezas.add(newDestinoLabel, oldJ, oldI);
-
-                imprimirMatriz(click);
-
-            }
-        });
-    }
-
-    private void mostrarAlertaCompletado(long tiempo) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("¡Felicidades!");
-        alert.setHeaderText("¡Rompecabezas completado!");
-        alert.setContentText("Has completado el rompecabezas en " + (tiempo / 1000) + " segundos.");
-        alert.showAndWait();
-    }
-
 
     private boolean verificarRompecabezasCompleto() {
         // Recorrer todas las piezas y verificar si están en la posición correcta
@@ -318,52 +327,128 @@ public class Rompecabezas extends Stage {
                 int correctRow = Integer.parseInt(correctPosition[0]);
                 int correctCol = Integer.parseInt(correctPosition[1]);
 
-                // Si la posición actual no coincide con la correcta, el puzzle no está completo
                 if (currentRow != correctRow || currentCol != correctCol) {
                     return false;
                 }
             }
         }
-
-        // Si todas las piezas están en posición correcta
+        cuentador.stop();
         return true;
     }
 
+    private void mostrarAlertaCompletado(long tiempo) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("¡Felicidades!");
+        alert.setHeaderText("¡Rompecabezas completado!");
+        alert.setContentText("Has completado el rompecabezas en " + (tiempo / 1000) + " segundos.");
+        alert.showAndWait();
+    }
 
+    private void registrarTiempos(long tiempo) {
+        int a = 0;
 
-
-
-    public String[][] generarCuadroCoordenadas(int fila, int columna, String[][] cuadrito) {
-        for (int i = 0; i < fila; i++) {
-            ArrayList<String> coordenadas = new ArrayList<>();
-
-            // Llenamos la lista con las coordenadas de la fila actual
-            for (int j = 0; j < columna; j++) {
-                coordenadas.add(i+","+j);
+            File dirResources = new File("tiempos");
+            File archivo = new File("tiempos/tiempos.txt");
+        try {
+            // Crear directorio si no existe
+            if (!dirResources.exists()) {
+                dirResources.mkdirs();
             }
 
-            // Mezclamos aleatoriamente la lista
-            Collections.shuffle(coordenadas);
+            // Ruta al archivo de tiempos, usando ruta relativa simple
+            System.out.println("Guardando tiempo en: " + archivo.getAbsolutePath());
+            PrintWriter writer = new PrintWriter(new FileWriter(archivo,true));
+            writer.print("Duracion del intento: ");
+            writer.print("\t");
+            writer.print(tiempo);
+            writer.print(" ms");
+            writer.println();
+            writer.close();
 
-            // Llenamos la matriz con las coordenadas desordenadas
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error al guardar tiempo: " + e.getMessage());
+
+            // Mostrar alerta de error
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText("Error al guardar tiempo");
+            alert.setContentText("No se pudo guardar el tiempo en el archivo.\nDetalle: " + e.getMessage());
+            alert.showAndWait();
+        }
+        mostrarTiempo();
+
+        if (archivo.exists()) {
+            if (archivo.delete()) {
+                System.out.println("Archivo eliminado correctamente después de la ejecución.");
+            } else {
+                System.err.println("No se pudo eliminar el archivo después de la ejecución.");
+            }
+        }
+    }
+
+    public void mostrarTiempo()
+    {
+        String[] numero;
+        FileReader archivo;
+        String aux;
+        ObservableList<String> tiempIntentos =FXCollections.observableArrayList();
+        Stage ventana = new Stage();
+        Scene escena;
+        try {
+            archivo = new FileReader("tiempos/tiempos.txt");
+            Scanner lectura = new Scanner(archivo);
+            intento = new TableView<String>();
+            TableColumn<String,String> tbIntentos = new TableColumn<>("Intentos");
+            while (lectura.hasNextLine())
+            {
+                aux = lectura.nextLine();
+                numero = aux.split("\s");
+                aux = numero[2]+": " +String.valueOf(Double.parseDouble(numero[3])/1000)+" s";
+                tiempIntentos.add(aux);
+            }
+
+            tbIntentos.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue()));
+
+            intento.getColumns().add(tbIntentos);
+            intento.setItems(tiempIntentos);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        escena = new Scene(intento);
+        ventana.setTitle("Historial de intenntos");
+        ventana.setScene(escena);
+        ventana.show();
+    }
+
+    public void contador() {
+        IntegerProperty contador = new SimpleIntegerProperty(0);
+        tiempo.textProperty().bind(contador.asString());
+
+        cuentador = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
+            contador.set(contador.get() + 1);
+        }));
+
+        cuentador.setCycleCount(Timeline.INDEFINITE);
+        cuentador.play();
+    }
+
+    public String[][] generarCuadroCoordenadas(int fila, int columna, String[][] cuadrito) {
+        ArrayList<String> todasLasCoordenadas = new ArrayList<>();
+
+        // Generamos todas las coordenadas posibles
+        for (int i = 0; i < fila; i++) {
             for (int j = 0; j < columna; j++) {
-                cuadrito[i][j] = coordenadas.get(j);
+                todasLasCoordenadas.add(i + "," + j);
+            }
+        }
+        Collections.shuffle(todasLasCoordenadas);
+        int indice = 0;
+        for (int i = 0; i < fila; i++) {
+            for (int j = 0; j < columna; j++) {
+                cuadrito[i][j] = todasLasCoordenadas.get(indice++);
             }
         }
         return cuadrito;
     }
-
-    public Label[][] reacomodar(Label[][] click) {
-        for (int i = 0; i < click.length; i++) {
-            for (int j = 0; j < click[0].length; j++) {
-                int finalI = i;
-                int finalJ = j;
-
-                agregarEventosDeMovimiento(click[i][j], click, finalI, finalJ);
-            }
-        }
-        return click;
-    }
-
 }
-
