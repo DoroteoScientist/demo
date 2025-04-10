@@ -1,0 +1,3 @@
+Duracion del intento: 	105635 ms
+Duracion del intento: 	359952 ms
+Duracion del intento: 	15800 ms
