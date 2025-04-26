@@ -11,10 +11,27 @@
 
 
 /* Selector de identificador*/
+
 #fontButton{
-    -fx-font: bold italic 20pt "Arial";
+    /*-fx-font: bold italic 20pt "Arial";*/
     -fx-background-color: #ef4646;
     -fx-text-fill: white;
+}
+
+#anotherFontButton{
+    /*-fx-font: bold italic 20pt "Arial";*/
+    -fx-background-color: #3acc0c;
+    -fx-text-fill: white;
+}
+
+#fontButton:hover
+{
+    -fx-background-color: #aaaaaa;
+}
+
+#anotherFontButton:hover
+{
+    -fx-background-color: #aaaaaa;
 }
 
 .button:hover
