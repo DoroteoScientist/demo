@@ -10,57 +10,47 @@ import java.sql.Statement;
 
 public class ClientesDAO {
 
-    private int idCte;
-    private String nomCte;
-    private String telefonoiCte;
+    private int cveCliente;
+    private String nombCliente;
+    private String apePatCliente;
+    private String apeMatCliente;
+    private String telCliente;
     private String direccion;
-    private String emailCte;
+    private String emailCliente;
 
-    public String getNomCte() {
-        return nomCte;
-    }
+    public int getCveCliente() {return cveCliente;}
 
-    public void setNomCte(String nomCte) {
-        this.nomCte = nomCte;
-    }
+    public void setCveCliente(int idCliente) {this.cveCliente = idCliente;}
 
-    public String getTelefonoCte() {
-        return telefonoiCte;
-    }
+    public String getNombCliente() {return nombCliente;}
 
-    public void setTelefonoiCte(String telefonoiCte) {
-        this.telefonoiCte = telefonoiCte;
-    }
+    public void setNombCliente(String nombCliente) {this.nombCliente = nombCliente;}
 
-    public String getEmailCte() {
-        return emailCte;
-    }
+    public String getApePatEmpleado() {return apePatCliente;}
 
-    public void setEmailCte(String emailCte) {
-        this.emailCte = emailCte;
-    }
+    public void setApePatEmpleado(String apePatEmpleado) {this.apePatCliente = apePatEmpleado;}
 
-    public String getDireccion() {
-        return direccion;
-    }
+    public String getApeMatEmpleado() {return apeMatCliente;}
 
-    public void setDireccion(String direccion) {
-        this.direccion = direccion;
-    }
+    public void setApeMatEmpleado(String apeMatEmpleado) {this.apeMatCliente = apeMatEmpleado;}
 
-    public int getIdCte() {
-        return idCte;
-    }
+    public String getTelCliente() {return telCliente;}
 
-    public void setIdCte(int idCte) {
-        this.idCte = idCte;
-    }
+    public void setTelCliente(String telCliente) {this.telCliente = telCliente;}
+
+    public String getDireccion() {return direccion;}
+
+    public void setDireccion(String direccion) {this.direccion = direccion;}
+
+    public String getEmailCliente() {return emailCliente;}
+
+    public void setEmailCliente(String emailCliente) {this.emailCliente = emailCliente;}
 
     public void INSERT()
     {
         //MANDAR CONSULTA A LA BD
-        String query = "INSERT INTO cliente(nomCte,telefonoCte,direccion,emailCte) " +
-                "values('"+nomCte+"','"+telefonoiCte+"','"+direccion+"','"+emailCte+"')";
+        String query = "INSERT INTO cliente(nombCliente,apePatCliente,apeMatCliente,telCliente,direccion,emailCliente) " +
+                "values('"+nombCliente+"','"+apePatCliente+"','"+apeMatCliente+"','"+telCliente+"','"+direccion+"','"+emailCliente+"')";
         try{
             Statement stat =  Conexion.connection.createStatement(); //crea la consulta. el que lleva lo que va a hacer que arramque
             stat.executeUpdate(query);//todas las operaciones actualaizan la bd
@@ -72,8 +62,9 @@ public class ClientesDAO {
     public void UPDATE()
     {
         //MANDAR CONSULTA A LA BD
-        String query = "UPDATE cliente SET nomCte = '"+nomCte+"', telefonoCte = '"+telefonoiCte+
-                "',direccion = '"+direccion+"',emailCte = '"+emailCte+"' WHERE idCte = '"+idCte+"'";
+        String query = "UPDATE cliente SET nombCliente = '"+nombCliente+"apePatCliente"+apePatCliente+"apeMatCliente"+apeMatCliente+
+                "', telCliente = '"+telCliente+ "',direccion = '"+direccion+"',emailCte = '"+emailCliente+
+                "' WHERE idCte = '"+cveCliente+"'";
         //asi sin nada, se actualizarian todos los registros con un solo dato, asi
         //que hay que ponerle el WHERE
         try{
@@ -87,7 +78,7 @@ public class ClientesDAO {
 
     public void DELETE()
     {
-        String query = "DELETE FROM cliente WHERE idCte = "+idCte;
+        String query = "DELETE FROM cliente WHERE idCte = "+cveCliente;
         try{
             Statement stat =  Conexion.connection.createStatement(); //crea la consulta. el que lleva lo que va a hacer que arramque
             stat.executeUpdate(query);//todas las operaciones actualaizan la bd
@@ -98,7 +89,7 @@ public class ClientesDAO {
 
     public ObservableList<ClientesDAO> SELECT()
     {
-        String query = "SELECT * FROM cliente";
+        String query = "SELECT * FROM clientes";
         ObservableList<ClientesDAO> lista = FXCollections.observableArrayList();
 
         try{
@@ -109,11 +100,13 @@ public class ClientesDAO {
             while(res.next())//mientras haya ub registro
             {
                 objC = new ClientesDAO();
-                objC.setIdCte(res.getInt("idCte"));
-                objC.setNomCte(res.getString("nomCte"));
-                objC.setTelefonoiCte(res.getString("telefonoCte"));
+                objC.setCveCliente(res.getInt("cveCliente"));
+                objC.setNombCliente(res.getString("nombCliente"));
+                objC.setApePatEmpleado(res.getString("apePatCliente"));
+                objC.setApeMatEmpleado(res.getString("apeMatCliente"));
+                objC.setTelCliente(res.getString("telCliente"));
                 objC.setDireccion(res.getString("direccion"));
-                objC.setEmailCte(res.getString("emailCte"));
+                objC.setEmailCliente(res.getString("emailCliente"));
 
 
                 //agarra los valores de res, para que le arroje esos valores

@@ -14,7 +14,7 @@ public class Cliente extends Stage
 {
     private Button btnGuarda;
     private Scene escena;
-    private TextField txtNomCte, txtDireccion, txtTelefono, txtEmail;
+    private TextField txtnombCliente, txtDireccion, txtTelefono, txtEmail;
     private VBox vcaja;
     private ClientesDAO objC;
     private TableView<ClientesDAO> tbCliente;
@@ -28,10 +28,10 @@ public class Cliente extends Stage
         else
         {
             objC = obj;
-            txtNomCte.setText(objC.getNomCte());
-            txtTelefono.setText(objC.getTelefonoCte());
+            txtnombCliente.setText(objC.getNombCliente());
+            txtTelefono.setText(objC.getTelCliente());
             txtDireccion.setText(objC.getDireccion());
-            txtEmail.setText(objC.getEmailCte());
+            txtEmail.setText(objC.getEmailCliente());
 
         }
             //objC = obj==null? new ClientesDAO() : obj;
@@ -42,18 +42,18 @@ public class Cliente extends Stage
 
     private void CrearUI()
     {
-        txtNomCte = new TextField();
+        txtnombCliente = new TextField();
         txtDireccion = new TextField();
         txtTelefono = new TextField();
         txtEmail = new TextField();
         btnGuarda = new Button("Guardar");
         btnGuarda.setOnAction(actionEvent ->
         {
-            objC.setNomCte(txtNomCte.getText());
+            objC.setNombCliente(txtnombCliente.getText());
             objC.setDireccion(txtDireccion.getText());
-            objC.setTelefonoiCte(txtTelefono.getText());
-            objC.setEmailCte(txtEmail.getText());
-            if(objC.getIdCte() > 0)
+            objC.setTelCliente(txtTelefono.getText());
+            objC.setEmailCliente(txtEmail.getText());
+            if(objC.getCveCliente() > 0)
                 objC.UPDATE();
             else
                 objC.INSERT();
@@ -61,7 +61,7 @@ public class Cliente extends Stage
             tbCliente.refresh();
             this.close();
         });
-        vcaja = new VBox(txtNomCte,txtDireccion,txtTelefono,txtEmail,btnGuarda);
+        vcaja = new VBox(txtnombCliente,txtDireccion,txtTelefono,txtEmail,btnGuarda);
         escena = new Scene(vcaja,120,150);
     }
 }
