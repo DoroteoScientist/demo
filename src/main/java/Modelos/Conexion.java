@@ -5,8 +5,8 @@ import java.sql.DriverAction;
 import java.sql.DriverManager;
 
 public class Conexion {
-    static private String DB = "restaurante";
-    static private String USER = "admin";
+    static private String DB = "restaurantedb";
+    static private String USER = "admin3";
     static private String PWD = "1234";
     static private String HOST = "localhost";
     static private String PORT =  "3306";

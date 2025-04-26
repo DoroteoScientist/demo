@@ -1,25 +1,32 @@
 package Vistas;
-import Modelos.ClientesDAO;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Objects;
+import java.util.Date;
 
 public class Rompecabezas extends Stage {
 
@@ -27,7 +34,7 @@ public class Rompecabezas extends Stage {
 
     private ToolBar menu;
     private VBox vBox;
-    private Button btnEmpezar, btnOpcion;
+    private Button btnEmpezar, btnHistorial;
     private GridPane tablerito;
     private MenuBar practica3;
     private MenuItem chico, medio, grande;
@@ -35,10 +42,15 @@ public class Rompecabezas extends Stage {
     private Menu opciones;
     private TextField opcionInicio;
     private GridPane piezas;
-    private GridPane piezasOriginales; // GridPane para mantener el orden correcto
-    private long tiempoInicion,tiempoFinal;
+    private GridPane piezasOriginales;
+    private long tiempoInicion, tiempoFinal;
     private RandomAccessFile regTiempos;
-    private TableView<String> intento;
+
+    // Elementos para el contador de tiempo
+    private Label tiempoLabel;
+    private Timeline timeline;
+    private int segundos = 0;
+    private boolean juegoEnCurso = false;
 
     public Rompecabezas() {
         CrearUI();
@@ -48,9 +60,8 @@ public class Rompecabezas extends Stage {
     }
 
     public void CrearUI() {
-
         piezas = new GridPane();
-        piezasOriginales = new GridPane(); // Inicializa el GridPane de piezas originales
+        piezasOriginales = new GridPane();
 
         chico = new MenuItem("Piezas chicas");
         chico.setOnAction(actionEvent ->
@@ -61,33 +72,78 @@ public class Rompecabezas extends Stage {
                 opcionInicio.setText("Piezas medianas"));
 
         grande = new MenuItem("Piezas grandes");
-        grande.setOnAction(actionEvent -> opcionInicio.setText("Piezas grandes"));
+        grande.setOnAction(actionEvent ->
+                opcionInicio.setText("Piezas grandes"));
 
         opcionInicio = new TextField("");
         opcionInicio.setEditable(false);
-        btnEmpezar = new Button("Empezar");//[pnerle una imagen
-        btnEmpezar.setOnAction(actionEvent ->
-        {
-            tiempoInicion = System.currentTimeMillis();
-            tablero(opcionInicio.getText());
+
+        btnEmpezar = new Button("Empezar");
+        btnEmpezar.setOnAction(actionEvent -> {
+            if (!opcionInicio.getText().isEmpty()) {
+                tiempoInicion = System.currentTimeMillis();
+                reiniciarContador();
+                iniciarContador();
+                juegoEnCurso = true;
+                tablero(opcionInicio.getText());
+            } else {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Selección requerida");
+                alert.setHeaderText("Selecciona un tamaño de piezas");
+                alert.setContentText("Por favor, selecciona un tamaño de piezas antes de empezar.");
+                alert.showAndWait();
+            }
         });
+
+        btnHistorial = new Button("Historial");
+        btnHistorial.setOnAction(actionEvent -> mostrarHistorial());
 
         opciones = new Menu("Opciones de inicio");
         opciones.getItems().addAll(chico, medio, grande);
         practica3 = new MenuBar();
         practica3.getMenus().addAll(opciones);
-        menu = new ToolBar(btnEmpezar, practica3, opcionInicio);
+
+        // Crear el contador de tiempo
+        tiempoLabel = new Label("Tiempo: 00:00");
+        tiempoLabel.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+
+        // Crear HBox para el contador
+        HBox contadorBox = new HBox(10);
+        contadorBox.setAlignment(Pos.CENTER_RIGHT);
+        contadorBox.getChildren().add(tiempoLabel);
+
+        menu = new ToolBar(btnEmpezar, btnHistorial, practica3, opcionInicio);
+        menu.getItems().add(contadorBox);
+
         vBox = new VBox(menu, piezas);
-        escena = new Scene(vBox, 600, 600); // Aumentamos el tamaño para que quepa el puzzle
+        escena = new Scene(vBox, 600, 600);
     }
 
-    public void ventanaTiempo (long tiempoUno, long tiempoDos) {
-        Stage ventana = new Stage();
-        Scene escena;
-        intento = new TableView<>();
-        TableColumn<String,String> tbIntentos = new TableColumn<>("Intentos");
-        //tbIntentos.setCellValueFactory();
-        // Implementar esta función si es necesario
+    private void iniciarContador() {
+        timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
+            segundos++;
+            actualizarContador();
+        }));
+        timeline.setCycleCount(Animation.INDEFINITE);
+        timeline.play();
+    }
+
+    private void detenerContador() {
+        if (timeline != null) {
+            timeline.stop();
+        }
+    }
+
+    private void reiniciarContador() {
+        detenerContador();
+        segundos = 0;
+        actualizarContador();
+    }
+
+    private void actualizarContador() {
+        int minutos = segundos / 60;
+        int segs = segundos % 60;
+        tiempoLabel.setText(String.format("Tiempo: %02d:%02d", minutos, segs));
     }
 
     public void tablero(String opcion) {
@@ -114,10 +170,8 @@ public class Rompecabezas extends Stage {
 
                         Label label = new Label();
                         label.setGraphic(imageView);
-                        // Almacenar la posición correcta como metadatos
                         label.setUserData(rowCoord + "," + colCoord);
 
-                        // Configurar el drag and drop para cada pieza
                         configurarDragAndDrop(label);
 
                         imagenes[i][j] = label;
@@ -125,34 +179,91 @@ public class Rompecabezas extends Stage {
                     }
                 }
 
+                for (int i = 0; i < 4; i++) {
+                    for (int j = 0; j < 4; j++) {
+                        String imagePath = "/image/puzzle1/row-" + (i + 1) + "-column-" + (j + 1) + ".jpg";
+                        ImageView imageView = new ImageView(getClass().getResource(imagePath).toString());
+                        imageView.setFitWidth(100);
+                        imageView.setFitHeight(100);
+
+                        Label label = new Label();
+                        label.setGraphic(imageView);
+                        label.setUserData(i + "," + j);
+
+                        piezasOriginales.add(label, j, i);
+                    }
+                }
                 break;
 
             case "Piezas medianas":
-                // Implementar para piezas medianas
+                // Implementar para tamaño mediano (3x3)
+                imagenes = new Label[3][3];
+
+                coordenadasMezcladas = new String[3][3];
+                coordenadasMezcladas = generarCuadroCoordenadas(3, 3, coordenadasMezcladas);
+
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        String[] coords = coordenadasMezcladas[i][j].split(",");
+                        int rowCoord = Integer.parseInt(coords[0]);
+                        int colCoord = Integer.parseInt(coords[1]);
+
+                        String imagePath = "/image/puzzle1/row-" + (rowCoord + 1) + "-column-" + (colCoord + 1) + ".jpg";
+                        ImageView imageView = new ImageView(getClass().getResource(imagePath).toString());
+                        imageView.setFitWidth(130);
+                        imageView.setFitHeight(130);
+
+                        Label label = new Label();
+                        label.setGraphic(imageView);
+                        label.setUserData(rowCoord + "," + colCoord);
+
+                        configurarDragAndDrop(label);
+
+                        imagenes[i][j] = label;
+                        piezas.add(label, j, i);
+                    }
+                }
                 break;
 
             case "Piezas grandes":
-                // Implementar para piezas grandes
-                break;
+                // Implementar para tamaño grande (2x2)
+                imagenes = new Label[2][2];
 
-            default:
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setTitle("Selección requerida");
-                alert.setHeaderText("Selecciona un tamaño de piezas");
-                alert.setContentText("Por favor, selecciona un tamaño de piezas antes de empezar.");
-                alert.showAndWait();
+                coordenadasMezcladas = new String[2][2];
+                coordenadasMezcladas = generarCuadroCoordenadas(2, 2, coordenadasMezcladas);
+
+                for (int i = 0; i < 2; i++) {
+                    for (int j = 0; j < 2; j++) {
+                        String[] coords = coordenadasMezcladas[i][j].split(",");
+                        int rowCoord = Integer.parseInt(coords[0]);
+                        int colCoord = Integer.parseInt(coords[1]);
+
+                        String imagePath = "/image/puzzle1/row-" + (rowCoord + 1) + "-column-" + (colCoord + 1) + ".jpg";
+                        ImageView imageView = new ImageView(getClass().getResource(imagePath).toString());
+                        imageView.setFitWidth(200);
+                        imageView.setFitHeight(200);
+
+                        Label label = new Label();
+                        label.setGraphic(imageView);
+                        label.setUserData(rowCoord + "," + colCoord);
+
+                        configurarDragAndDrop(label);
+
+                        imagenes[i][j] = label;
+                        piezas.add(label, j, i);
+                    }
+                }
                 break;
         }
     }
 
     private void configurarDragAndDrop(Label pieceLabel) {
-        // Configurar el origen del drag (pieza que se arrastra)
         pieceLabel.setOnDragDetected(event -> {
+            if (!juegoEnCurso) return;
+
             Dragboard db = pieceLabel.startDragAndDrop(TransferMode.MOVE);
             ClipboardContent content = new ClipboardContent();
 
-            // Guardamos información sobre la pieza que estamos arrastrando
-            // Usamos el índice de la pieza en el GridPane
             Integer rowIndex = GridPane.getRowIndex(pieceLabel);
             Integer colIndex = GridPane.getColumnIndex(pieceLabel);
             if (rowIndex == null) rowIndex = 0;
@@ -164,9 +275,9 @@ public class Rompecabezas extends Stage {
             event.consume();
         });
 
-        // Configurar el destino del drag (donde se suelta la pieza)
         pieceLabel.setOnDragOver(event -> {
-            // Permitir la operación de drop
+            if (!juegoEnCurso) return;
+
             if (event.getGestureSource() != pieceLabel &&
                     event.getDragboard().hasString()) {
                 event.acceptTransferModes(TransferMode.MOVE);
@@ -174,31 +285,30 @@ public class Rompecabezas extends Stage {
             event.consume();
         });
 
-        // Manejar el evento de drop
         pieceLabel.setOnDragDropped(event -> {
+            if (!juegoEnCurso) return;
+
             Dragboard db = event.getDragboard();
             boolean success = false;
 
             if (db.hasString()) {
-                // Obtenemos las coordenadas de origen
                 String[] sourceIndices = db.getString().split(",");
                 int sourceRow = Integer.parseInt(sourceIndices[0]);
                 int sourceCol = Integer.parseInt(sourceIndices[1]);
 
-                // Obtenemos las coordenadas de destino
                 Integer targetRow = GridPane.getRowIndex(pieceLabel);
                 Integer targetCol = GridPane.getColumnIndex(pieceLabel);
                 if (targetRow == null) targetRow = 0;
                 if (targetCol == null) targetCol = 0;
 
-                // Intercambiar las piezas
                 intercambiarPiezas(sourceRow, sourceCol, targetRow, targetCol);
 
                 success = true;
 
-                // Verificar si el rompecabezas está completo
                 if (verificarRompecabezasCompleto()) {
                     tiempoFinal = System.currentTimeMillis() - tiempoInicion;
+                    juegoEnCurso = false;
+                    detenerContador();
                     mostrarAlertaCompletado(tiempoFinal);
                     registrarTiempos(tiempoFinal);
                 }
@@ -210,31 +320,26 @@ public class Rompecabezas extends Stage {
     }
 
     private void intercambiarPiezas(int sourceRow, int sourceCol, int targetRow, int targetCol) {
-        // Obtenemos referencias a las etiquetas
         Label sourceLabel = obtenerLabelEnPosicion(piezas, sourceRow, sourceCol);
         Label targetLabel = obtenerLabelEnPosicion(piezas, targetRow, targetCol);
 
         if (sourceLabel != null && targetLabel != null) {
-            // Guardamos los gráficos (imágenes)
             ImageView sourceImage = (ImageView) sourceLabel.getGraphic();
             ImageView targetImage = (ImageView) targetLabel.getGraphic();
 
-            // Guardamos los metadatos
             Object sourceData = sourceLabel.getUserData();
             Object targetData = targetLabel.getUserData();
 
-            // Intercambiamos las imágenes y los metadatos
             sourceLabel.setGraphic(targetImage);
             targetLabel.setGraphic(sourceImage);
 
             sourceLabel.setUserData(targetData);
             targetLabel.setUserData(sourceData);
 
-            // Actualizamos la matriz imagenes si la estamos utilizando
             imagenes[sourceRow][sourceCol] = sourceLabel;
             imagenes[targetRow][targetCol] = targetLabel;
         }
-       }
+    }
 
     private Label obtenerLabelEnPosicion(GridPane grid, int row, int col) {
         for (Node node : grid.getChildren()) {
@@ -252,30 +357,24 @@ public class Rompecabezas extends Stage {
     }
 
     private boolean verificarRompecabezasCompleto() {
-        // Recorrer todas las piezas y verificar si están en la posición correcta
         for (Node node : piezas.getChildren()) {
             if (node instanceof Label) {
                 Label label = (Label) node;
 
-                // Obtener la posición actual en el grid
                 Integer currentRow = GridPane.getRowIndex(label);
                 Integer currentCol = GridPane.getColumnIndex(label);
                 if (currentRow == null) currentRow = 0;
                 if (currentCol == null) currentCol = 0;
 
-                // Obtener la posición correcta almacenada en userData
                 String[] correctPosition = ((String) label.getUserData()).split(",");
                 int correctRow = Integer.parseInt(correctPosition[0]);
                 int correctCol = Integer.parseInt(correctPosition[1]);
 
-                // Si la posición actual no coincide con la correcta, el puzzle no está completo
                 if (currentRow != correctRow || currentCol != correctCol) {
                     return false;
                 }
             }
         }
-
-        // Si todas las piezas están en posición correcta
         return true;
     }
 
@@ -288,33 +387,36 @@ public class Rompecabezas extends Stage {
     }
 
     private void registrarTiempos(long tiempo) {
-        int a = 0;
         try {
-            // Crear directorio si no existe
-            File dirResources = new File("tiempos");
-            if (!dirResources.exists()) {
-                dirResources.mkdirs();
+            File dirTiempos = new File("tiempos");
+            if (!dirTiempos.exists()) {
+                dirTiempos.mkdirs();
             }
 
-            // Ruta al archivo de tiempos, usando ruta relativa simple
             File archivo = new File("tiempos/tiempos.dat");
             System.out.println("Guardando tiempo en: " + archivo.getAbsolutePath());
 
-            // Abrir archivo en modo rw (lectura y escritura)
-            regTiempos = new RandomAccessFile(archivo, "rw");
+            // Guardar también la fecha actual
+            Date fechaActual = new Date();
+            SimpleDateFormat formatoFecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            String fechaFormateada = formatoFecha.format(fechaActual);
 
-            // Ir al final del archivo para añadir el nuevo tiempo
+            // Guardar el tipo de rompecabezas
+            String tipoRompecabezas = opcionInicio.getText();
+
+            regTiempos = new RandomAccessFile(archivo, "rw");
             regTiempos.seek(regTiempos.length());
 
-            // Escribir el tiempo y cerrarlo correctamente
-            a++;
-            regTiempos.writeUTF("INTENTO "+a+": "+tiempo);
+            // Formato: tiempo,fecha,tipo
+            String registro = tiempo + "," + fechaFormateada + "," + tipoRompecabezas + "\n";
+            regTiempos.writeBytes(registro);
+
             regTiempos.close();
+            System.out.println("Tiempo guardado correctamente: " + tiempo + " ms");
         } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error al guardar tiempo: " + e.getMessage());
 
-            // Mostrar alerta de error
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error");
             alert.setHeaderText("Error al guardar tiempo");
@@ -323,20 +425,106 @@ public class Rompecabezas extends Stage {
         }
     }
 
+    private void mostrarHistorial() {
+        // Crear una nueva ventana para mostrar el historial
+        Stage ventanaHistorial = new Stage();
+        ventanaHistorial.setTitle("Historial de Tiempos");
+
+        // Crear una tabla para mostrar los tiempos
+        TableView<RegistroTiempo> tabla = new TableView<>();
+
+        // Definir las columnas
+        TableColumn<RegistroTiempo, String> colFecha = new TableColumn<>("Fecha");
+        colFecha.setCellValueFactory(cellData -> cellData.getValue().fechaProperty());
+        colFecha.setPrefWidth(150);
+
+        TableColumn<RegistroTiempo, String> colTiempo = new TableColumn<>("Tiempo");
+        colTiempo.setCellValueFactory(cellData -> cellData.getValue().tiempoFormateadoProperty());
+        colTiempo.setPrefWidth(100);
+
+        TableColumn<RegistroTiempo, String> colTipo = new TableColumn<>("Tipo");
+        colTipo.setCellValueFactory(cellData -> cellData.getValue().tipoProperty());
+        colTipo.setPrefWidth(120);
+
+        tabla.getColumns().addAll(colFecha, colTiempo, colTipo);
+
+        // Cargar los datos desde el archivo
+        ArrayList<RegistroTiempo> registros = cargarRegistrosTiempos();
+        tabla.getItems().addAll(registros);
+
+        // Crear botones para ordenar los registros
+        Button btnOrdenarPorTiempo = new Button("Ordenar por Tiempo");
+        btnOrdenarPorTiempo.setOnAction(e -> {
+            registros.sort((r1, r2) -> Long.compare(r1.getTiempoRaw(), r2.getTiempoRaw()));
+            tabla.getItems().clear();
+            tabla.getItems().addAll(registros);
+        });
+
+        Button btnOrdenarPorFecha = new Button("Ordenar por Fecha");
+        btnOrdenarPorFecha.setOnAction(e -> {
+            registros.sort((r1, r2) -> r2.getFecha().compareTo(r1.getFecha()));
+            tabla.getItems().clear();
+            tabla.getItems().addAll(registros);
+        });
+
+        // Layouts
+        HBox botonesBox = new HBox(10, btnOrdenarPorTiempo, btnOrdenarPorFecha);
+        botonesBox.setPadding(new Insets(10));
+        botonesBox.setAlignment(Pos.CENTER);
+
+        VBox root = new VBox(10);
+        root.getChildren().addAll(tabla, botonesBox);
+        root.setPadding(new Insets(10));
+
+        Scene escena = new Scene(root, 400, 500);
+        ventanaHistorial.setScene(escena);
+        ventanaHistorial.show();
+    }
+
+    private ArrayList<RegistroTiempo> cargarRegistrosTiempos() {
+        ArrayList<RegistroTiempo> registros = new ArrayList<>();
+
+        try {
+            File archivo = new File("tiempos/tiempos.dat");
+            if (!archivo.exists()) {
+                System.out.println("No se encontró archivo de tiempos.");
+                return registros;
+            }
+
+            RandomAccessFile raf = new RandomAccessFile(archivo, "r");
+            String linea;
+
+            while ((linea = raf.readLine()) != null) {
+                String[] partes = linea.split(",");
+                if (partes.length >= 3) {
+                    long tiempo = Long.parseLong(partes[0]);
+                    String fecha = partes[1];
+                    String tipo = partes[2];
+
+                    registros.add(new RegistroTiempo(tiempo, fecha, tipo));
+                }
+            }
+
+            raf.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error al cargar tiempos: " + e.getMessage());
+        }
+
+        return registros;
+    }
+
     public String[][] generarCuadroCoordenadas(int fila, int columna, String[][] cuadrito) {
         ArrayList<String> todasLasCoordenadas = new ArrayList<>();
 
-        // Generamos todas las coordenadas posibles
         for (int i = 0; i < fila; i++) {
             for (int j = 0; j < columna; j++) {
                 todasLasCoordenadas.add(i + "," + j);
             }
         }
 
-        // Mezclamos todas las coordenadas
         Collections.shuffle(todasLasCoordenadas);
 
-        // Llenamos la matriz con las coordenadas mezcladas
         int index = 0;
         for (int i = 0; i < fila; i++) {
             for (int j = 0; j < columna; j++) {
@@ -345,5 +533,45 @@ public class Rompecabezas extends Stage {
         }
 
         return cuadrito;
+    }
+
+    // Clase para representar un registro de tiempo en la tabla
+    public static class RegistroTiempo {
+        private long tiempoRaw;
+        private String fecha;
+        private String tipo;
+        private String tiempoFormateado;
+
+        public RegistroTiempo(long tiempo, String fecha, String tipo) {
+            this.tiempoRaw = tiempo;
+            this.fecha = fecha;
+            this.tipo = tipo;
+
+            // Formatear el tiempo en minutos:segundos
+            int segundos = (int) (tiempo / 1000);
+            int minutos = segundos / 60;
+            int segsRestantes = segundos % 60;
+            this.tiempoFormateado = String.format("%02d:%02d", minutos, segsRestantes);
+        }
+
+        public long getTiempoRaw() {
+            return tiempoRaw;
+        }
+
+        public String getFecha() {
+            return fecha;
+        }
+
+        public javafx.beans.property.StringProperty fechaProperty() {
+            return new javafx.beans.property.SimpleStringProperty(fecha);
+        }
+
+        public javafx.beans.property.StringProperty tiempoFormateadoProperty() {
+            return new javafx.beans.property.SimpleStringProperty(tiempoFormateado);
+        }
+
+        public javafx.beans.property.StringProperty tipoProperty() {
+            return new javafx.beans.property.SimpleStringProperty(tipo);
+        }
     }
 }
